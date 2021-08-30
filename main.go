@@ -103,6 +103,9 @@ func checkHelper(guildId, memberId string) {
 
 	if len(helpers) > 0 {
 		for _, memberRole := range member.Roles {
+			if checkUserBlacklist(member.User.ID, guildId) {
+				continue
+			}
 			if memberRole == roleId {
 				continue
 			}
@@ -113,6 +116,9 @@ func checkHelper(guildId, memberId string) {
 		}
 	} else {
 		for _, memberRole := range member.Roles {
+			if checkUserBlacklist(member.User.ID, guildId) {
+				continue
+			}
 			if memberRole == roleId {
 				err = session.GuildMemberRoleRemove(guildId, member.User.ID, roleId)
 				if err != nil {
@@ -149,6 +155,9 @@ func checkHelpers(guildId string) {
 	for _, member := range members {
 		shouldHaveRole := false
 		for _, helper := range helpers {
+			if checkUserBlacklist(member.User.ID, guildId) {
+				shouldHaveRole = false
+			}
 			if helper.UserId == member.User.ID {
 				shouldHaveRole = true
 				break
@@ -293,6 +302,19 @@ func getServerConfigForGuildId(guildId string) (serverConfig ServerConfig) {
 		log.Panicln("("+guildId+") getServerConfigForGuildId#DbMap.SelectOne", err)
 	}
 	return
+}
+
+func checkUserBlacklist(userId string, guildId string) bool {
+	err := DbMap.SelectOne("SELECT * FROM HelperBlacklist WHERE user_id = ? AND guild_id = ?", userId, guildId)
+
+	if err == sql.ErrNoRows {
+		return false
+	}
+
+	if err != nil {
+		log.Panicln("("+userId+") checkUserBlacklist#DbMap.SelectOne", err)
+	}
+	return true
 }
 
 func getAllMembers(guildId string) []*discordgo.Member {
