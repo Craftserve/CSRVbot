@@ -103,12 +103,19 @@ func checkHelper(guildId, memberId string) {
 
 	if len(helpers) > 0 {
 		for _, memberRole := range member.Roles {
-			if checkUserBlacklist(member.User.ID, guildId) {
-				continue
-			}
 			if memberRole == roleId {
+				if checkUserBlacklist(member.User.ID, guildId) {
+					err = session.GuildMemberRoleRemove(guildId, member.User.ID, roleId)
+					if err != nil {
+						log.Println("("+guildId+") checkHelper#session.GuildMemberRoleRemove", err)
+					}
+					continue
+				}
 				continue
 			}
+		}
+		if checkUserBlacklist(member.User.ID, guildId) {
+			return
 		}
 		err = session.GuildMemberRoleAdd(guildId, member.User.ID, roleId)
 		if err != nil {
@@ -305,7 +312,8 @@ func getServerConfigForGuildId(guildId string) (serverConfig ServerConfig) {
 }
 
 func checkUserBlacklist(userId string, guildId string) bool {
-	err := DbMap.SelectOne("SELECT * FROM HelperBlacklist WHERE user_id = ? AND guild_id = ?", userId, guildId)
+	var helperBlacklist HelperBlacklist
+	err := DbMap.SelectOne(&helperBlacklist, "SELECT * FROM HelperBlacklist WHERE user_id = ? AND guild_id = ?", userId, guildId)
 
 	if err == sql.ErrNoRows {
 		return false
