@@ -34,6 +34,7 @@ func handleGiveawayReactions(s *discordgo.Session, r *discordgo.MessageReactionA
 				log.Println("("+r.GuildID+") handleGiveawayReactions#s.MessageReactionRemove", err)
 			}
 		}
+
 		reactionists, _ = s.MessageReactions(r.ChannelID, r.MessageID, "✅", 10, "", "")
 		for _, user := range reactionists {
 			if user.ID == s.State.User.ID || (user.ID == r.UserID && r.MessageReaction.Emoji.Name == "✅") {
@@ -44,6 +45,7 @@ func handleGiveawayReactions(s *discordgo.Session, r *discordgo.MessageReactionA
 				log.Println("("+r.GuildID+") handleGiveawayReactions#s.MessageReactionRemove", err)
 			}
 		}
+
 		participant := getParticipantByMessageId(r.MessageID)
 		participant.AcceptTime.Time = time.Now()
 		participant.AcceptTime.Valid = true
@@ -118,9 +120,12 @@ func HandleThxmeReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd)
 		if !candidate.IsAccepted.Valid {
 			return
 		}
+
 		log.Println(candidate.CandidateApproverName + "(" + candidate.CandidateApproverId + ") zaakceptował prosbe o thx uzytkownika " + candidate.CandidateName + "(" + candidate.CandidateId + ")")
+
 		_ = session.ChannelMessageDelete(candidate.ChannelId, candidate.MessageId)
 		candidate.IsAccepted.Bool = true
+
 		_, err := DbMap.Update(candidate)
 		if err != nil {
 			log.Panicln("("+r.GuildID+") handleGiveawayReactions#DbMap.Update(participant)", err)
@@ -131,6 +136,7 @@ func HandleThxmeReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd)
 			log.Println("(" + r.GuildID + ") handleThxmeReactions#getGiveawayForGuild")
 			return
 		}
+
 		channelId := candidate.ChannelId
 		participant := &Participant{
 			UserId:     candidate.CandidateId,
@@ -141,7 +147,9 @@ func HandleThxmeReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd)
 			GuildName:  candidate.GuildName,
 			ChannelId:  channelId,
 		}
+
 		participant.MessageId = *updateThxInfoMessage(nil, r.GuildID, channelId, candidate.CandidateId, participant.GiveawayId, nil, wait)
+
 		err = DbMap.Insert(participant)
 		if err != nil {
 			_, err = session.ChannelMessageSend(channelId, "Coś poszło nie tak przy dodawaniu podziękowania :(")

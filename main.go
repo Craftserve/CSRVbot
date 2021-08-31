@@ -233,7 +233,9 @@ func getCSRVCode() (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	req.SetBasicAuth("csrvbot", config.CsrvSecret)
+
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Println("getCSRVCode http.DefaultClient.Do(req) " + err.Error())
@@ -244,19 +246,23 @@ func getCSRVCode() (string, error) {
 	var data struct {
 		Code string `json:"code"`
 	}
+
 	err = json.NewDecoder(resp.Body).Decode(&data)
 	if err != nil {
 		return "", err
 	}
+
 	return data.Code, nil
 }
 
 func generateResendEmbed(userId string) (embed *discordgo.MessageEmbed, err error) {
 	var giveaways []Giveaway
+
 	_, err = DbMap.Select(&giveaways, "SELECT code FROM Giveaways WHERE winner_id = ? ORDER BY id DESC LIMIT 10", userId)
 	if err != nil {
 		return
 	}
+
 	embed = &discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
 			URL:     "https://craftserve.pl",
@@ -264,15 +270,18 @@ func generateResendEmbed(userId string) (embed *discordgo.MessageEmbed, err erro
 			IconURL: "https://cdn.discordapp.com/avatars/524308413719642118/c2a17b4479bfcc89d2b7e64e6ae15ebe.webp",
 		},
 	}
+
 	embed.Description = ""
 	for _, giveaway := range giveaways {
 		embed.Description += giveaway.Code.String + "\n"
 	}
+
 	return
 }
 
 func createConfigurationIfNotExists(guildId string) {
 	var serverConfig ServerConfig
+
 	err := DbMap.SelectOne(&serverConfig, "SELECT * FROM ServerConfig WHERE guild_id = ?", guildId)
 	if err == sql.ErrNoRows {
 		serverConfig.GuildId = guildId
@@ -282,6 +291,7 @@ func createConfigurationIfNotExists(guildId string) {
 		serverConfig.HelperRoleThxesNeeded = 0
 		err = DbMap.Insert(&serverConfig)
 	}
+
 	if err != nil {
 		log.Panicln("("+guildId+") createConfigurationIfNotExists#DbMap.SelectOne", err)
 	}

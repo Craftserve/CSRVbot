@@ -43,6 +43,7 @@ func updateThxInfoMessage(messageId *string, guildId, channelId, participantId s
 	if err != nil {
 		log.Println("("+guildId+") updateThxInfoMessage#getParticipantsNamesString", err)
 	}
+
 	embed := discordgo.MessageEmbed{
 		Author: &discordgo.MessageEmbedAuthor{
 			URL:     "https://craftserve.pl",
@@ -62,6 +63,7 @@ func updateThxInfoMessage(messageId *string, guildId, channelId, participantId s
 	embed.Color = 0x234d20
 	embed.Fields = []*discordgo.MessageEmbedField{}
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Dodany", Value: "<@" + participantId + ">", Inline: true})
+
 	var status string
 	if state == wait {
 		status = "Oczekiwanie"
@@ -76,8 +78,10 @@ func updateThxInfoMessage(messageId *string, guildId, channelId, participantId s
 		}
 		status = "Odrzucono"
 	}
+
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Status", Value: status, Inline: true})
 	var message *discordgo.Message
+
 	if messageId != nil {
 		message, err = session.ChannelMessageEditEmbed(channelId, *messageId, &embed)
 		if err != nil {
@@ -91,7 +95,9 @@ func updateThxInfoMessage(messageId *string, guildId, channelId, participantId s
 			return nil
 		}
 	}
+
 	notifyThxOnThxInfoChannel(guildId, channelId, message.ID, participantId, confirmerId, state)
+
 	return &message.ID
 }
 
@@ -108,6 +114,7 @@ func notifyThxOnThxInfoChannel(guildId, channelId, messageId, participantId stri
 	embed.Fields = []*discordgo.MessageEmbedField{}
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Dla", Value: "<@" + participantId + ">", Inline: true})
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Kanał", Value: "<#" + channelId + ">", Inline: true})
+
 	if state == wait {
 		embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Status", Value: "Oczekiwanie", Inline: true})
 	} else if state == confirm {
@@ -119,9 +126,11 @@ func notifyThxOnThxInfoChannel(guildId, channelId, messageId, participantId stri
 			embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Status", Value: "Odrzucono przez <@" + *confirmerId + ">", Inline: true})
 		}
 	}
+
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Link", Value: "https://discordapp.com/channels/" + guildId + "/" + channelId + "/" + messageId, Inline: false})
 
 	var serverConfig ServerConfig
+
 	err := DbMap.SelectOne(&serverConfig, "SELECT * from ServerConfig WHERE guild_id = ?", guildId)
 	if err != nil {
 		log.Println("("+guildId+") "+"notifyThxOnThxInfoChannel#DbMap.SelectOne Unable to read from database!", err)
@@ -133,6 +142,7 @@ func notifyThxOnThxInfoChannel(guildId, channelId, messageId, participantId stri
 	}
 
 	var thxNotification ThxNotification
+
 	err = DbMap.SelectOne(&thxNotification, "SELECT * from ThxNotifications WHERE message_id=?", messageId)
 	if err == sql.ErrNoRows {
 		message, err := session.ChannelMessageSendEmbed(serverConfig.ThxInfoChannel, &embed)

@@ -31,6 +31,7 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 	if strings.HasPrefix(args[1], "!") {
 		args[1] = args[1][1:]
 	}
+
 	if m.Author.ID == args[1] {
 		_, err := session.ChannelMessageSend(m.ChannelID, "Nie można dziękować sobie!")
 		if err != nil {
@@ -39,11 +40,13 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 		}
 		return
 	}
+
 	user, err := session.User(args[1])
 	if err != nil {
 		log.Println("("+m.GuildID+") handleThxCommand#session.User", err)
 		return
 	}
+
 	guild, err := session.Guild(m.GuildID)
 	if err != nil {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Coś poszło nie tak przy dodawaniu podziękowania :(")
@@ -54,6 +57,7 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 		log.Println("("+m.GuildID+") handleThxCommand#session.Guild", err)
 		return
 	}
+
 	log.Println("(" + m.GuildID + ") " + m.Author.Username + " has thanked " + user.Username)
 	if user.Bot {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Nie można dziękować botom!")
@@ -63,6 +67,7 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 		}
 		return
 	}
+
 	if isBlacklisted(m.GuildID, m.Mentions[0].ID) {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Ten użytkownik jest na czarnej liście i nie może brać udziału :(")
 		if err != nil {
@@ -71,11 +76,13 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 		}
 		return
 	}
+
 	giveaway := getGiveawayForGuild(m.GuildID)
 	if giveaway == nil {
 		log.Println("(" + m.GuildID + ") handleThxCommand#getGiveawayForGuild")
 		return
 	}
+
 	participant := &Participant{
 		UserId:     args[1],
 		GiveawayId: giveaway.Id,
@@ -86,6 +93,7 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 	participant.GuildName = guild.Name
 	participant.UserName = user.Username
 	participant.MessageId = *updateThxInfoMessage(nil, m.GuildID, m.ChannelID, args[1], participant.GiveawayId, nil, wait)
+
 	err = DbMap.Insert(participant)
 	if err != nil {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Coś poszło nie tak przy dodawaniu podziękowania :(")
@@ -95,6 +103,7 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 		}
 		log.Panicln("("+m.GuildID+") handleThxCommand#DbMap.Insert", err)
 	}
+
 	for err = session.MessageReactionAdd(m.ChannelID, participant.MessageId, "✅"); err != nil; err = session.MessageReactionAdd(m.ChannelID, participant.MessageId, "✅") {
 	}
 	for err = session.MessageReactionAdd(m.ChannelID, participant.MessageId, "⛔"); err != nil; err = session.MessageReactionAdd(m.ChannelID, participant.MessageId, "⛔") {
@@ -110,6 +119,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 				log.Println("("+m.GuildID+") handleCsrvbotCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
 				if err != nil {
@@ -118,6 +128,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 				}
 				return
 			}
+
 			guild, err := s.Guild(m.GuildID)
 			if err != nil {
 				log.Println("("+m.GuildID+") handleCsrvbotCommand#s.Guild", err)
@@ -126,6 +137,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 					return
 				}
 			}
+
 			finishGiveaway(m.GuildID)
 			createMissingGiveaways(guild)
 			return
@@ -507,6 +519,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 				log.Println("("+m.GuildID+") handleThxCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
 				if err != nil {
@@ -515,6 +528,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 				}
 				return
 			}
+
 			if len(args) == 2 {
 				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać nazwę roli!")
 				if err != nil {
@@ -523,6 +537,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 				}
 				return
 			}
+
 			serverConfig := getServerConfigForGuildId(m.GuildID)
 			num, err := strconv.Atoi(args[2])
 			if err != nil {
@@ -533,7 +548,9 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 				}
 				return
 			}
+
 			serverConfig.HelperRoleThxesNeeded = num
+
 			_, err = DbMap.Update(&serverConfig)
 			if err != nil {
 				log.Panic("("+m.GuildID+") handleThxCommand#DbMap.Update(&serverConfig)", err)
@@ -577,10 +594,12 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 		printGiveawayInfo(m.ChannelID, m.GuildID)
 		return
 	}
+
 	args[1] = args[1][2 : len(args[1])-1]
 	if strings.HasPrefix(args[1], "!") {
 		args[1] = args[1][1:]
 	}
+
 	if m.Author.ID == args[1] {
 		_, err := session.ChannelMessageSend(m.ChannelID, "Nie można poprosić o podziękowanie samego siebie!")
 		if err != nil {
@@ -606,7 +625,9 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 		log.Println("("+guild.ID+") handleThxmeCommand#session.Guild", err)
 		return
 	}
+
 	log.Println("(" + guild.ID + ") " + m.Author.Username + " has thanked " + user.Username)
+
 	if user.Bot {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Nie można prosić o podziękowanie bota!")
 		if err != nil {
@@ -615,6 +636,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 		}
 		return
 	}
+
 	if isBlacklisted(m.GuildID, m.Author.ID) {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Nie możesz poprosić o podziękowanie, gdyż jesteś na czarnej liście!")
 		if err != nil {
@@ -623,6 +645,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 		}
 		return
 	}
+
 	candidate := &ParticipantCandidate{
 		CandidateName:         m.Author.Username,
 		CandidateId:           m.Author.ID,
@@ -632,6 +655,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 		GuildId:               m.GuildID,
 		ChannelId:             m.ChannelID,
 	}
+
 	messageId, err := s.ChannelMessageSend(m.ChannelID, user.Mention()+", czy chcesz podziękować użytkownikowi "+m.Author.Mention()+"?")
 	if err != nil {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Coś poszło nie tak przy dodawaniu kandydata do podziekowania :(")
@@ -641,6 +665,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 		}
 		log.Panicln("("+guild.ID+") handleThxmeCommand#session.ChannelMessageSend", err)
 	}
+
 	candidate.MessageId = messageId.ID
 	err = DbMap.Insert(candidate)
 	if err != nil {
@@ -652,6 +677,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 		log.Println("("+guild.ID+") handleThxmeCommand#DbMap.Insert", err)
 		return
 	}
+
 	for err = session.MessageReactionAdd(m.ChannelID, candidate.MessageId, "✅"); err != nil; err = session.MessageReactionAdd(m.ChannelID, candidate.MessageId, "✅") {
 	}
 	for err = session.MessageReactionAdd(m.ChannelID, candidate.MessageId, "⛔"); err != nil; err = session.MessageReactionAdd(m.ChannelID, candidate.MessageId, "⛔") {
@@ -672,7 +698,7 @@ func handleDocCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []s
 	// Hooking to Github API
 	r, err := req.Get("https://api.github.com/repos/craftserve/docs/contents/" + docFile + ".md")
 	if err != nil {
-		log.Println("handleDocCommand Unable to hook into github api", err)
+		log.Println("handleDocCommand#req.Get Unable to hook into github api", err)
 		return
 	}
 

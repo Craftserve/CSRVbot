@@ -127,11 +127,13 @@ func updateMemberSavedRoles(member *discordgo.Member, guildId string) {
 
 func restoreMemberRoles(member *discordgo.Member, guildId string) {
 	var memberRoles []MemberRole
+
 	_, err := DbMap.Select(&memberRoles, "SELECT * FROM MemberRoles WHERE guild_id = ? AND member_id = ?", guildId, member.User.ID)
 	if err != nil {
 		log.Println("("+guildId+") "+"restoreMemberRoles#DbMap.Select Error while selecting roles", err)
 		return
 	}
+
 	for _, role := range memberRoles {
 		err = session.GuildMemberRoleAdd(guildId, member.User.ID, role.RoleId)
 		if err != nil {
