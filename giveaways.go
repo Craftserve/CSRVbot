@@ -105,6 +105,7 @@ func finishGiveaway(guildId string) {
 		log.Println("("+guildId+") finishGiveaway#getCSRVCode", err)
 		_, err = session.ChannelMessageSend(giveawayChannelId, "Błąd API Craftserve, nie udało się pobrać kodu!")
 		if err != nil {
+			log.Println("("+guildId+") Could not send message to channel ("+giveawayChannelId+")", err)
 			return
 		}
 		return

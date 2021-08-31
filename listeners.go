@@ -40,7 +40,9 @@ func handleGiveawayReactions(s *discordgo.Session, r *discordgo.MessageReactionA
 				continue
 			}
 			err = s.MessageReactionRemove(r.ChannelID, r.MessageID, "✅", user.ID)
-			log.Println("("+r.GuildID+") "+"handleGiveawayReactions#s.MessageReactionRemove", err)
+			if err != nil {
+				log.Println("("+r.GuildID+") handleGiveawayReactions#s.MessageReactionRemove", err)
+			}
 		}
 		participant := getParticipantByMessageId(r.MessageID)
 		participant.AcceptTime.Time = time.Now()
@@ -142,8 +144,13 @@ func HandleThxmeReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd)
 		participant.MessageId = *updateThxInfoMessage(nil, r.GuildID, channelId, candidate.CandidateId, participant.GiveawayId, nil, wait)
 		err = DbMap.Insert(participant)
 		if err != nil {
-			_, _ = session.ChannelMessageSend(channelId, "Coś poszło nie tak przy dodawaniu podziękowania :(")
-			log.Println("("+r.GuildID+") "+"OnMessageCreate#DbMap.Insert(participant)", err)
+			_, err = session.ChannelMessageSend(channelId, "Coś poszło nie tak przy dodawaniu podziękowania :(")
+			if err != nil {
+				log.Println("("+r.GuildID+") Could not send message to channel ("+r.ChannelID+")", err)
+				return
+			}
+
+			log.Println("("+r.GuildID+") "+"handleGiveawayReactions#DbMap.Insert(participant)", err)
 		}
 		for err = session.MessageReactionAdd(channelId, participant.MessageId, "✅"); err != nil; err = session.MessageReactionAdd(channelId, participant.MessageId, "✅") {
 		}

@@ -16,7 +16,12 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 		return
 	}
 
-	match, _ := regexp.Match("<@[!]?[0-9]*>", []byte(args[1]))
+	match, err := regexp.Match("<@[!]?[0-9]*>", []byte(args[1]))
+	if err != nil {
+		log.Println("("+m.GuildID+") handleThxCommand#regexp.Match", err)
+		return
+	}
+
 	if !match {
 		printGiveawayInfo(m.ChannelID, m.GuildID)
 		return
@@ -106,7 +111,11 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 				return
 			}
 			if !hasAdminPermissions(member, m.GuildID) {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 				return
 			}
 			guild, err := s.Guild(m.GuildID)
@@ -123,23 +132,28 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 		case "delete":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleCsrvbotCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
 				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
 				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 					return
 				}
 				return
 			}
+
 			if len(args) == 2 {
 				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać ID użytkownika!")
 				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 					return
 				}
 				return
 			}
+
 			guild, err := session.Guild(m.GuildID)
 			if len(m.Mentions) < 1 {
 				if err != nil {
@@ -147,247 +161,376 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 					log.Println(err)
 					return
 				}
+
 				log.Println(m.Author.Username + " usunął ID " + args[2] + " z giveawaya na " + guild.Name)
 				deleteFromGiveaway(m.GuildID, args[2])
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Usunięto z giveawaya.")
+
+				_, err = s.ChannelMessageSend(m.ChannelID, "Usunięto z giveawaya.")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 				return
 			}
+
 			if err != nil {
 				log.Println(m.Author.Username + " usunął " + m.Mentions[0].Username + " z giveawaya na " + m.GuildID)
 				log.Println(err)
 				return
 			}
+
 			log.Println(m.Author.Username + " usunął " + m.Mentions[0].Username + " z giveawaya na " + guild.Name)
 			deleteFromGiveaway(m.GuildID, m.Mentions[0].ID)
-			_, _ = s.ChannelMessageSend(m.ChannelID, "Usunięto z giveawaya.")
+
+			_, err = s.ChannelMessageSend(m.ChannelID, "Usunięto z giveawaya.")
+			if err != nil {
+				log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+				return
+			}
 			return
 		case "blacklist":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleCsrvbotCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 				return
 			}
+
 			if len(args) == 2 {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Musisz podać użytkownika!")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Musisz podać użytkownika!")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 				return
 			}
+
 			guild, err := session.Guild(m.GuildID)
 			if len(m.Mentions) < 1 {
 				if err != nil {
 					log.Println(m.Author.Username + " zblacklistował ID " + args[2] + " na " + m.GuildID)
-					log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
+					log.Println("("+m.GuildID+") handleCsrvbotCommand#session.Guild", err)
 					return
 				}
 				log.Println(m.Author.Username + " zblacklistował ID " + args[2] + " na " + guild.Name)
 				if blacklistUser(m.GuildID, args[2], m.Author.ID) == nil {
-					_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik został zablokowany z możliwości udziału w giveaway.")
+					_, err = s.ChannelMessageSend(m.ChannelID, "Użytkownik został zablokowany z możliwości udziału w giveaway.")
+					if err != nil {
+						log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+						return
+					}
 				}
 				return
 			}
+
 			if err != nil {
 				log.Println(m.Author.Username + " zblacklistował " + m.Mentions[0].Username + " na " + m.GuildID)
-				log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleCsrvbotCommand#session.Guild", err)
 				return
 			}
+
 			log.Println(m.Author.Username + " zblacklistował " + m.Mentions[0].Username + " na " + guild.Name)
 			if blacklistUser(m.GuildID, m.Mentions[0].ID, m.Author.ID) == nil {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik został zablokowany z możliwości udziału w giveaway.")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Użytkownik został zablokowany z możliwości udziału w giveaway.")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 			}
+
 			return
 		case "unblacklist":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleCsrvbotCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 				return
 			}
+
 			if len(args) == 2 {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Musisz podać użytkownika!")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Musisz podać użytkownika!")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 				return
 			}
+
 			guild, err := session.Guild(m.GuildID)
 			if len(m.Mentions) < 1 {
 				if err != nil {
 					log.Println(m.Author.Username + " odblacklistował ID " + args[2] + " na " + m.GuildID)
-					log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
+					log.Println("("+m.GuildID+") handleCsrvbotCommand#session.Guild", err)
 					return
 				}
+
 				log.Println(m.Author.Username + " odblacklistował ID " + args[2] + " na " + guild.Name)
 				if unblacklistUser(m.GuildID, args[2]) == nil {
-					_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik ponownie może brać udział w giveawayach.")
+					_, err = s.ChannelMessageSend(m.ChannelID, "Użytkownik ponownie może brać udział w giveawayach.")
+					if err != nil {
+						log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+						return
+					}
 				}
 				return
 			}
 			if err != nil {
 				log.Println(m.Author.Username + " odblacklistował " + m.Mentions[0].Username + " na " + m.GuildID)
-				log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleThxCommand#session.Guild", err)
 				return
 			}
 			log.Println(m.Author.Username + " odblacklistował " + m.Mentions[0].Username + " na " + guild.Name)
 			if unblacklistUser(m.GuildID, m.Mentions[0].ID) == nil {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik ponownie może brać udział w giveawayach.")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Użytkownik ponownie może brać udział w giveawayach.")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 			}
 			return
 		case "setGiveawayChannel":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleThxCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
-				return
-			}
-			if len(args) == 2 {
-				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać kanał!")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
 				if err != nil {
-					log.Println(err)
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
 				}
 				return
 			}
+
+			if len(args) == 2 {
+				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać kanał!")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
+				return
+			}
+
 			serverConfig := getServerConfigForGuildId(m.GuildID)
 			if strings.HasPrefix(args[2], "<#") {
 				args[2] = args[2][2:]
 				args[2] = args[2][:len(args[2])-1]
 			}
+
 			serverConfig.MainChannel = args[2]
 			_, err = DbMap.Update(&serverConfig)
 			if err != nil {
-				log.Panic("OnMessageCreate DbMap.Update(&serverConfig) " + err.Error())
+				log.Panic("("+m.GuildID+") handleThxCommand#DbMap.Update(&serverConfig)", err)
 			}
-			_, _ = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+
+			_, err = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+			if err != nil {
+				log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+				return
+			}
 			return
 		case "setBotAdminRoleName":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleThxCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
-				return
-			}
-			if len(args) == 2 {
-				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać nazwę roli!")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
 				if err != nil {
-					log.Println(err)
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
 				}
 				return
 			}
+
+			if len(args) == 2 {
+				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać nazwę roli!")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
+				return
+			}
+
 			serverConfig := getServerConfigForGuildId(m.GuildID)
 			serverConfig.AdminRole = args[2]
+
 			_, err = DbMap.Update(&serverConfig)
 			if err != nil {
-				log.Panic("OnMessageCreate DbMap.Update(&serverConfig) " + err.Error())
+				log.Panic("("+m.GuildID+") handleThxCommand#DbMap.Update(&serverConfig)", err)
 			}
-			_, _ = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+
+			_, err = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+			if err != nil {
+				log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+				return
+			}
 			return
 		case "setThxInfoChannel":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleThxCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
-				return
-			}
-			if len(args) == 2 {
-				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać kanał!")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
 				if err != nil {
-					log.Println(err)
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
 				}
 				return
 			}
+
+			if len(args) == 2 {
+				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać kanał!")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
+				return
+			}
+
 			serverConfig := getServerConfigForGuildId(m.GuildID)
 			if strings.HasPrefix(args[2], "<#") {
 				args[2] = args[2][2:]
 				args[2] = args[2][:len(args[2])-1]
 			}
+
 			serverConfig.ThxInfoChannel = args[2]
+
 			_, err = DbMap.Update(&serverConfig)
 			if err != nil {
-				log.Panic("OnMessageCreate DbMap.Update(&serverConfig) " + err.Error())
+				log.Panic("("+m.GuildID+") handleThxCommand#DbMap.Update(&serverConfig)", err)
 			}
-			_, _ = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+
+			_, err = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+			if err != nil {
+				log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+				return
+			}
+
 			return
 		case "resend":
 			embed, err := generateResendEmbed(m.Message.Author.ID)
 			if err != nil {
 				log.Println("handleCsrvbotCommand#generateResendEmbed(" + m.Message.Author.ID + ") " + err.Error())
 			}
+
 			dm, err := session.UserChannelCreate(m.Message.Author.ID)
 			if err != nil {
 				log.Println("handleCsrvbotCommand#UserChannelCreate", err)
 				return
 			}
+
 			_, err = session.ChannelMessageSendEmbed(dm.ID, embed)
 			if err != nil {
 				_, err := session.ChannelMessageSend(m.ChannelID, "Nie udało się wysłać kodów, ponieważ masz wyłączone wiadomości prywatne.")
 				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 					return
 				}
 				return
 			}
+
 			_, err = s.ChannelMessageSend(m.ChannelID, "Kody zostały ponownie wysłane.")
 			if err != nil {
+				log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 				return
 			}
+
 			log.Println("Wysłano resend do " + m.Author.Username + "#" + m.Author.Discriminator)
 			return
 		case "setHelperRoleName":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleThxCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
+
 			if !hasAdminPermissions(member, m.GuildID) {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
-				return
-			}
-			if len(args) == 2 {
-				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać nazwę roli!")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
 				if err != nil {
-					log.Println(err)
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
 				}
 				return
 			}
+
+			if len(args) == 2 {
+				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać nazwę roli!")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
+				return
+			}
+
 			serverConfig := getServerConfigForGuildId(m.GuildID)
 			serverConfig.HelperRoleName = args[2]
+
 			_, err = DbMap.Update(&serverConfig)
 			if err != nil {
-				log.Panic("OnMessageCreate DbMap.Update(&serverConfig) " + err.Error())
+				log.Panic("("+m.GuildID+") handleThxCommand#DbMap.Update(&serverConfig)", err)
 			}
-			_, _ = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+
+			_, err = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+			if err != nil {
+				log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+				return
+			}
+
 			return
 		case "setHelperRoleNeededThxAmount":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleThxCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
 			if !hasAdminPermissions(member, m.GuildID) {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 				return
 			}
 			if len(args) == 2 {
 				_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać nazwę roli!")
 				if err != nil {
-					log.Println(err)
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
 				}
 				return
 			}
 			serverConfig := getServerConfigForGuildId(m.GuildID)
 			num, err := strconv.Atoi(args[2])
 			if err != nil {
-				_, _ = s.ChannelMessageSend(m.ChannelID, "Ale moze liczbe daj co")
+				_, err = s.ChannelMessageSend(m.ChannelID, "Ale moze liczbe daj co")
+				if err != nil {
+					log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+					return
+				}
 				return
 			}
 			serverConfig.HelperRoleThxesNeeded = num
@@ -395,25 +538,41 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 			if err != nil {
 				log.Panic("OnMessageCreate DbMap.Update(&serverConfig) " + err.Error())
 			}
-			_, _ = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+
+			_, err = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
+			if err != nil {
+				log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+				return
+			}
+
 			checkHelpers(m.GuildID)
 			return
 		}
 
 	}
-	_, _ = s.ChannelMessageSend(m.ChannelID, "!csrvbot <`start` | `delete` | `resend` | `blacklist` | `unblacklist` | `setGiveawayChannel` | `setBotAdminRoleName` | `setThxInfoChannel` | `setHelperRoleName` | `setHelperRoleNeededThxAmount`>")
+	_, err := s.ChannelMessageSend(m.ChannelID, "!csrvbot <`start` | `delete` | `resend` | `blacklist` | `unblacklist` | `setGiveawayChannel` | `setBotAdminRoleName` | `setThxInfoChannel` | `setHelperRoleName` | `setHelperRoleNeededThxAmount`>")
+	if err != nil {
+		log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+		return
+	}
 }
 
 func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
 	if len(args) != 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Niepoprawna ilość argumentów")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		return
 	}
 
-	match, _ := regexp.Match("<@[!]?[0-9]*>", []byte(args[1]))
+	match, err := regexp.Match("<@[!]?[0-9]*>", []byte(args[1]))
+	if err != nil {
+		log.Println("("+m.GuildID+") handleThxmeCommand#regexp.Match", err)
+		return
+	}
+
 	if !match {
 		printGiveawayInfo(m.ChannelID, m.GuildID)
 		return
@@ -425,6 +584,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 	if m.Author.ID == args[1] {
 		_, err := session.ChannelMessageSend(m.ChannelID, "Nie można poprosić o podziękowanie samego siebie!")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		return
@@ -440,6 +600,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 	if err != nil {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Coś poszło nie tak przy dodawaniu podziękowania :(")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		log.Println("("+guild.ID+") handleThxmeCommand#session.Guild", err)
@@ -449,6 +610,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 	if user.Bot {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Nie można prosić o podziękowanie bota!")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		return
@@ -456,6 +618,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 	if isBlacklisted(m.GuildID, m.Author.ID) {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Nie możesz poprosić o podziękowanie, gdyż jesteś na czarnej liście!")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		return
@@ -473,6 +636,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 	if err != nil {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Coś poszło nie tak przy dodawaniu kandydata do podziekowania :(")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		log.Panicln("("+guild.ID+") handleThxmeCommand#session.ChannelMessageSend", err)
@@ -482,6 +646,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 	if err != nil {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Coś poszło nie tak przy dodawaniu kandydata do podziękowania :(")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		log.Println("("+guild.ID+") handleThxmeCommand#DbMap.Insert", err)
@@ -497,6 +662,7 @@ func handleDocCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []s
 	if len(args) == 1 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Musisz podać jakiś poradnik.")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		return
@@ -515,6 +681,7 @@ func handleDocCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []s
 	if resp.StatusCode != 200 || (args[1] == "readme" || args[1] == "todo") {
 		_, err = s.ChannelMessageSend(m.ChannelID, "Taki poradnik nie istnieje.")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		return
@@ -523,6 +690,7 @@ func handleDocCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []s
 	if len(args) == 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "<https://github.com/craftserve/docs/blob/master/"+docFile+".md>")
 		if err != nil {
+			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 			return
 		}
 		return
@@ -531,6 +699,7 @@ func handleDocCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []s
 	anchor := strings.ReplaceAll(strings.Join(args[2:], "-"), "?", "")
 	_, err = s.ChannelMessageSend(m.ChannelID, "<https://github.com/craftserve/docs/blob/master/"+docFile+".md#"+anchor+">")
 	if err != nil {
+		log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
 		return
 	}
 	return
