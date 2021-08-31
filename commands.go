@@ -107,7 +107,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 		case "start":
 			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
 			if err != nil {
-				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				log.Println("("+m.GuildID+") handleCsrvbotCommand#s.GuildMember("+m.Message.Author.ID+")", err)
 				return
 			}
 			if !hasAdminPermissions(member, m.GuildID) {
@@ -120,7 +120,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 			}
 			guild, err := s.Guild(m.GuildID)
 			if err != nil {
-				log.Println("OnMessageCreate s.Guild(" + m.GuildID + ")")
+				log.Println("("+m.GuildID+") handleCsrvbotCommand#s.Guild", err)
 				guild, err = s.Guild(m.GuildID)
 				if err != nil {
 					return
@@ -536,7 +536,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 			serverConfig.HelperRoleThxesNeeded = num
 			_, err = DbMap.Update(&serverConfig)
 			if err != nil {
-				log.Panic("OnMessageCreate DbMap.Update(&serverConfig) " + err.Error())
+				log.Panic("("+m.GuildID+") handleThxCommand#DbMap.Update(&serverConfig)", err)
 			}
 
 			_, err = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
@@ -592,7 +592,7 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 
 	user, err := session.User(args[1])
 	if err != nil {
-		log.Println("handleThxmeCommand#session.User", err)
+		log.Println("("+m.GuildID+") handleThxmeCommand#session.User", err)
 		return
 	}
 

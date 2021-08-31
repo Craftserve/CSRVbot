@@ -86,7 +86,7 @@ var DbMap gorp.DbMap
 func initDatabase() {
 	db, err := sql.Open("mysql", config.MysqlString)
 	if err != nil {
-		log.Panic("initDatabase sql.Open(\"mysql\", "+config.MysqlString+")", err)
+		log.Panic("initDatabase#sql.Open(\"mysql\", "+config.MysqlString+")", err)
 	}
 
 	DbMap = gorp.DbMap{Db: db, Dialect: gorp.MySQLDialect{Engine: "InnoDB", Encoding: "UTF8MB4"}}

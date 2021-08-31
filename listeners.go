@@ -20,7 +20,7 @@ func handleGiveawayReactions(s *discordgo.Session, r *discordgo.MessageReactionA
 
 	member, err := s.GuildMember(r.GuildID, r.UserID)
 	if err != nil {
-		log.Panicln("("+r.GuildID+") "+"handleGiveawayReactions#s.GuildMember", err)
+		log.Panicln("("+r.GuildID+") handleGiveawayReactions#s.GuildMember", err)
 	}
 
 	if hasAdminPermissions(member, r.GuildID) && (r.Emoji.Name == "✅" || r.Emoji.Name == "⛔") {
@@ -31,7 +31,7 @@ func handleGiveawayReactions(s *discordgo.Session, r *discordgo.MessageReactionA
 			}
 			err = s.MessageReactionRemove(r.ChannelID, r.MessageID, "⛔", user.ID)
 			if err != nil {
-				log.Println("("+r.GuildID+") "+"handleGiveawayReactions#s.MessageReactionRemove", err)
+				log.Println("("+r.GuildID+") handleGiveawayReactions#s.MessageReactionRemove", err)
 			}
 		}
 		reactionists, _ = s.MessageReactions(r.ChannelID, r.MessageID, "✅", 10, "", "")
@@ -123,7 +123,7 @@ func HandleThxmeReactions(s *discordgo.Session, r *discordgo.MessageReactionAdd)
 		candidate.IsAccepted.Bool = true
 		_, err := DbMap.Update(candidate)
 		if err != nil {
-			log.Panicln("handleGiveawayReactions DbMap.Update(participant) " + err.Error())
+			log.Panicln("("+r.GuildID+") handleGiveawayReactions#DbMap.Update(participant)", err)
 		}
 
 		giveaway := getGiveawayForGuild(candidate.GuildId)
