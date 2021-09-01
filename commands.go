@@ -11,15 +11,53 @@ import (
 )
 
 func handleThxCommand(m *discordgo.MessageCreate, args []string) {
-	if len(args) != 2 {
+	if len(args) < 2 {
 		printGiveawayInfo(m.ChannelID, m.GuildID)
 		return
 	}
 
 	match, _ := regexp.Match("<@[!]?[0-9]*>", []byte(args[1]))
 	if !match {
-		printGiveawayInfo(m.ChannelID, m.GuildID)
-		return
+		nick := strings.Join(args[1:], " ")
+		found := false
+		var foundIds []string
+		var foundInMsgsIds []string
+		for _, member := range getAllMembers(m.GuildID) {
+			if (strings.ToLower(member.User.Username) == strings.ToLower(nick)) || (strings.ToLower(member.Nick) == strings.ToLower(nick)) {
+				foundIds = append(foundIds, member.User.ID)
+			}
+		}
+		messages, err := session.ChannelMessages(m.ChannelID, 20, "", "", "")
+		if err == nil {
+			if len(foundIds) > 1 {
+				for _, id := range foundIds {
+					for _, message := range messages {
+						if message.Author.ID == id {
+							foundInMsgsIds = append(foundInMsgsIds, id)
+							break
+						}
+					}
+				}
+				if len(foundInMsgsIds) == 1 {
+					args[1] = "<@" + foundInMsgsIds[0] + ">"
+					found = true
+				} else {
+					_, err := session.ChannelMessageSend(m.ChannelID, "Znaleziono wielu użytkowników, użyj `@"+nick+"` - by wskazać konkretną osobę!")
+					if err != nil {
+						log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+						return
+					}
+					return
+				}
+			} else if len(foundIds) == 1 {
+				args[1] = "<@" + foundIds[0] + ">"
+				found = true
+			}
+		}
+		if !found {
+			printGiveawayInfo(m.ChannelID, m.GuildID)
+			return
+		}
 	}
 
 	args[1] = args[1][2 : len(args[1])-1]
@@ -58,7 +96,7 @@ func handleThxCommand(m *discordgo.MessageCreate, args []string) {
 		}
 		return
 	}
-	if isBlacklisted(m.GuildID, m.Mentions[0].ID) {
+	if isBlacklisted(m.GuildID, args[1]) {
 		_, err = session.ChannelMessageSend(m.ChannelID, "Ten użytkownik jest na czarnej liście i nie może brać udziału :(")
 		if err != nil {
 			log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
@@ -405,7 +443,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 }
 
 func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
-	if len(args) != 2 {
+	if len(args) < 2 {
 		_, err := s.ChannelMessageSend(m.ChannelID, "Niepoprawna ilość argumentów")
 		if err != nil {
 			return
@@ -415,8 +453,46 @@ func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args [
 
 	match, _ := regexp.Match("<@[!]?[0-9]*>", []byte(args[1]))
 	if !match {
-		printGiveawayInfo(m.ChannelID, m.GuildID)
-		return
+		nick := strings.Join(args[1:], " ")
+		found := false
+		var foundIds []string
+		var foundInMsgsIds []string
+		for _, member := range getAllMembers(m.GuildID) {
+			if (strings.ToLower(member.User.Username) == strings.ToLower(nick)) || (strings.ToLower(member.Nick) == strings.ToLower(nick)) {
+				foundIds = append(foundIds, member.User.ID)
+			}
+		}
+		messages, err := session.ChannelMessages(m.ChannelID, 20, "", "", "")
+		if err == nil {
+			if len(foundIds) > 1 {
+				for _, id := range foundIds {
+					for _, message := range messages {
+						if message.Author.ID == id {
+							foundInMsgsIds = append(foundInMsgsIds, id)
+							break
+						}
+					}
+				}
+				if len(foundInMsgsIds) == 1 {
+					args[1] = "<@" + foundInMsgsIds[0] + ">"
+					found = true
+				} else {
+					_, err := session.ChannelMessageSend(m.ChannelID, "Znaleziono wielu użytkowników, użyj `@"+nick+"` - by wskazać konkretną osobę!")
+					if err != nil {
+						log.Println("("+m.GuildID+") Could not send message to channel ("+m.ChannelID+")", err)
+						return
+					}
+					return
+				}
+			} else if len(foundIds) == 1 {
+				args[1] = "<@" + foundIds[0] + ">"
+				found = true
+			}
+		}
+		if !found {
+			printGiveawayInfo(m.ChannelID, m.GuildID)
+			return
+		}
 	}
 	args[1] = args[1][2 : len(args[1])-1]
 	if strings.HasPrefix(args[1], "!") {
