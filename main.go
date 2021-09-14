@@ -52,6 +52,8 @@ func main() {
 		panic(err)
 	}
 
+	session.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMembers
+	
 	session.AddHandler(onMessageCreate)
 	session.AddHandler(handleGiveawayReactions)
 	session.AddHandler(HandleThxmeReactions)
