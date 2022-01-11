@@ -1,9 +1,16 @@
-FROM golang:1.17-bullseye
+FROM golang:1.17-alpine3.15 as builder
 
-ADD . /app
+ADD . /src
+
+RUN cd /src && go build -o csrvbot
+
+FROM alpine:3.15
+
 WORKDIR /app
+RUN chown nobody:nogroup /app
 
-RUN go build -o csrvbot
+COPY --from=builder --chown=nobody:nogroup /src ./
 RUN chmod +x csrvbot
+USER nobody
 
 CMD ["./csrvbot"]
