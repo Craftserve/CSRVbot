@@ -15,3 +15,5 @@ require (
 	github.com/ziutek/mymysql v1.5.4 // indirect
 	gopkg.in/gorp.v2 v2.2.0
 )
+
+replace github.com/bwmarrin/discordgo => github.com/vysiondev/discordgo v0.23.3-0.20210824070826-857485731eb0

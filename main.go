@@ -185,7 +185,7 @@ func printServerInfo(channelId, guildId string) *discordgo.Message {
 		return nil
 	}
 	embed.Fields = []*discordgo.MessageEmbedField{}
-	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Region", Value: guild.Region})
+	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Region", Value: guild.RTCRegion})
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Kanałów", Value: fmt.Sprintf("%d", len(guild.Channels))})
 	embed.Fields = append(embed.Fields, &discordgo.MessageEmbedField{Name: "Użytkowników", Value: fmt.Sprintf("%d", guild.MemberCount)})
 	msg, err := session.ChannelMessageSendEmbed(channelId, &embed)
