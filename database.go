@@ -81,6 +81,13 @@ type ThxNotification struct {
 	ThxNotificationMessageId string `db:"thx_notification_message_id,size:255"`
 }
 
+type HelperBlacklist struct {
+	Id            int    `db:"id,primarykey,autoincrement"`
+	GuildId       string `db:"guild_id,size:255"`
+	UserId        string `db:"user_id,size:255"`
+	BlacklisterId string `db:"blacklister_id,size:255"`
+}
+
 var DbMap gorp.DbMap
 
 func initDatabase() {
@@ -98,6 +105,7 @@ func initDatabase() {
 	DbMap.AddTableWithName(ServerConfig{}, "ServerConfig").SetKeys(true, "id")
 	DbMap.AddTableWithName(MemberRole{}, "MemberRoles").SetKeys(true, "id")
 	DbMap.AddTableWithName(ThxNotification{}, "ThxNotifications").SetKeys(true, "id")
+	DbMap.AddTableWithName(HelperBlacklist{}, "HelperBlacklist").SetKeys(true, "id")
 
 	err = DbMap.CreateTablesIfNotExists()
 	if err != nil {

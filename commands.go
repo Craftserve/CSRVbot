@@ -398,10 +398,84 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 			_, _ = s.ChannelMessageSend(m.ChannelID, "Ustawiono.")
 			checkHelpers(m.GuildID)
 			return
+		case "helperBlacklist":
+			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
+			if err != nil {
+				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				return
+			}
+			if !hasAdminPermissions(member, m.GuildID) {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				return
+			}
+			if len(args) == 2 {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Musisz podać użytkownika!")
+				return
+			}
+			guild, err := session.Guild(m.GuildID)
+			if len(m.Mentions) < 1 {
+				if err != nil {
+					log.Println(m.Author.Username + " zblacklistował (helper) ID " + args[2] + " na " + m.GuildID)
+					log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
+					return
+				}
+				log.Println(m.Author.Username + " zblacklistował (helper) ID " + args[2] + " na " + guild.Name)
+				if helperBlacklistUser(m.GuildID, args[2], m.Author.ID) == nil {
+					_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik został zablokowany z możliwości zostania pomocnym.")
+				}
+				return
+			}
+			if err != nil {
+				log.Println(m.Author.Username + " zblacklistował (helper) " + m.Mentions[0].Username + " na " + m.GuildID)
+				log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
+				return
+			}
+			log.Println(m.Author.Username + " zblacklistował (helper) " + m.Mentions[0].Username + " na " + guild.Name)
+			if helperBlacklistUser(m.GuildID, m.Mentions[0].ID, m.Author.ID) == nil {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik został zablokowany z możliwości zostania pomocnym.")
+			}
+			return
+		case "helperUnblacklist":
+			member, err := s.GuildMember(m.GuildID, m.Message.Author.ID)
+			if err != nil {
+				log.Println("OnMessageCreate s.GuildMember(" + m.GuildID + ", " + m.Message.Author.ID + ") " + err.Error())
+				return
+			}
+			if !hasAdminPermissions(member, m.GuildID) {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Brak uprawnień.")
+				return
+			}
+			if len(args) == 2 {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Musisz podać użytkownika!")
+				return
+			}
+			guild, err := session.Guild(m.GuildID)
+			if len(m.Mentions) < 1 {
+				if err != nil {
+					log.Println(m.Author.Username + " odblacklistował (helper) ID " + args[2] + " na " + m.GuildID)
+					log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
+					return
+				}
+				log.Println(m.Author.Username + " odblacklistował (helper) ID " + args[2] + " na " + guild.Name)
+				if helperUnBlacklistUser(m.GuildID, m.Mentions[0].ID) == nil {
+					_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik ponownie może zostać pomocnym.")
+				}
+				return
+			}
+			if err != nil {
+				log.Println(m.Author.Username + " odblacklistował (helper) " + m.Mentions[0].Username + " na " + m.GuildID)
+				log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
+				return
+			}
+			log.Println(m.Author.Username + " odblacklistował (helper) " + m.Mentions[0].Username + " na " + guild.Name)
+			if helperUnBlacklistUser(m.GuildID, m.Mentions[0].ID) == nil {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik ponownie może zostać pomocnym.")
+			}
+			return
 		}
 
 	}
-	_, _ = s.ChannelMessageSend(m.ChannelID, "!csrvbot <`start` | `delete` | `resend` | `blacklist` | `unblacklist` | `setGiveawayChannel` | `setBotAdminRoleName` | `setThxInfoChannel` | `setHelperRoleName` | `setHelperRoleNeededThxAmount`>")
+	_, _ = s.ChannelMessageSend(m.ChannelID, "!csrvbot <`start` | `delete` | `resend` | `blacklist` | `unblacklist` | `setGiveawayChannel` | `setBotAdminRoleName` | `setThxInfoChannel` | `setHelperRoleName` | `setHelperRoleNeededThxAmount` | `helperblacklist` | `helperunblacklist` >")
 }
 
 func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
