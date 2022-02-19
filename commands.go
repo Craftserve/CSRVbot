@@ -419,6 +419,11 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 					log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
 					return
 				}
+				if checkHelperBlacklist(m.GuildID, args[2]) {
+					_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik jest już zablokowany z możliwości zostania pomocnym")
+					return
+				}
+
 				log.Println(m.Author.Username + " zblacklistował (helper) ID " + args[2] + " na " + guild.Name)
 				if helperBlacklistUser(m.GuildID, args[2], m.Author.ID) == nil {
 					_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik został zablokowany z możliwości zostania pomocnym.")
@@ -430,6 +435,12 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 				log.Println("OnMessageCreate session.Guild(" + m.GuildID + ") " + err.Error())
 				return
 			}
+
+			if checkHelperBlacklist(m.GuildID, m.Mentions[0].ID) {
+				_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik jest już zablokowany z możliwości zostania pomocnym")
+				return
+			}
+
 			log.Println(m.Author.Username + " zblacklistował (helper) " + m.Mentions[0].Username + " na " + guild.Name)
 			if helperBlacklistUser(m.GuildID, m.Mentions[0].ID, m.Author.ID) == nil {
 				_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik został zablokowany z możliwości zostania pomocnym.")
