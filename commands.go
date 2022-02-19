@@ -457,7 +457,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 					return
 				}
 				log.Println(m.Author.Username + " odblacklistował (helper) ID " + args[2] + " na " + guild.Name)
-				if helperUnBlacklistUser(m.GuildID, m.Mentions[0].ID) == nil {
+				if helperUnBlacklistUser(m.GuildID, args[2]) == nil {
 					_, _ = s.ChannelMessageSend(m.ChannelID, "Użytkownik ponownie może zostać pomocnym.")
 				}
 				return
@@ -475,7 +475,7 @@ func handleCsrvbotCommand(s *discordgo.Session, m *discordgo.MessageCreate, args
 		}
 
 	}
-	_, _ = s.ChannelMessageSend(m.ChannelID, "!csrvbot <`start` | `delete` | `resend` | `blacklist` | `unblacklist` | `setGiveawayChannel` | `setBotAdminRoleName` | `setThxInfoChannel` | `setHelperRoleName` | `setHelperRoleNeededThxAmount` | `helperblacklist` | `helperunblacklist` >")
+	_, _ = s.ChannelMessageSend(m.ChannelID, "!csrvbot <`start` | `delete` | `resend` | `blacklist` | `unblacklist` | `setGiveawayChannel` | `setBotAdminRoleName` | `setThxInfoChannel` | `setHelperRoleName` | `setHelperRoleNeededThxAmount` | `helperBlacklist` | `helperUnblacklist` >")
 }
 
 func handleThxmeCommand(s *discordgo.Session, m *discordgo.MessageCreate, args []string) {
