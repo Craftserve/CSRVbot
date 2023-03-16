@@ -52,6 +52,9 @@ func main() {
 		panic(err)
 	}
 
+	session.Identify.Intents = discordgo.IntentsGuilds | discordgo.IntentsGuildMessages | discordgo.IntentsGuildMessageReactions | discordgo.IntentsGuildMembers
+
+	
 	session.AddHandler(onMessageCreate)
 	session.AddHandler(handleGiveawayReactions)
 	session.AddHandler(HandleThxmeReactions)
@@ -104,8 +107,18 @@ func checkHelper(guildId, memberId string) {
 	if len(helpers) > 0 {
 		for _, memberRole := range member.Roles {
 			if memberRole == roleId {
+				if checkUserBlacklist(member.User.ID, guildId) {
+					err = session.GuildMemberRoleRemove(guildId, member.User.ID, roleId)
+					if err != nil {
+						log.Println("("+guildId+") checkHelper#session.GuildMemberRoleRemove", err)
+					}
+					continue
+				}
 				continue
 			}
+		}
+		if checkUserBlacklist(member.User.ID, guildId) {
+			return
 		}
 		err = session.GuildMemberRoleAdd(guildId, member.User.ID, roleId)
 		if err != nil {
@@ -113,6 +126,9 @@ func checkHelper(guildId, memberId string) {
 		}
 	} else {
 		for _, memberRole := range member.Roles {
+			if checkUserBlacklist(member.User.ID, guildId) {
+				continue
+			}
 			if memberRole == roleId {
 				err = session.GuildMemberRoleRemove(guildId, member.User.ID, roleId)
 				if err != nil {
@@ -149,6 +165,9 @@ func checkHelpers(guildId string) {
 	for _, member := range members {
 		shouldHaveRole := false
 		for _, helper := range helpers {
+			if checkUserBlacklist(member.User.ID, guildId) {
+				shouldHaveRole = false
+			}
 			if helper.UserId == member.User.ID {
 				shouldHaveRole = true
 				break
@@ -293,6 +312,20 @@ func getServerConfigForGuildId(guildId string) (serverConfig ServerConfig) {
 		log.Panicln("("+guildId+") getServerConfigForGuildId#DbMap.SelectOne", err)
 	}
 	return
+}
+
+func checkUserBlacklist(userId string, guildId string) bool {
+	var helperBlacklist HelperBlacklist
+	err := DbMap.SelectOne(&helperBlacklist, "SELECT * FROM HelperBlacklist WHERE user_id = ? AND guild_id = ?", userId, guildId)
+
+	if err == sql.ErrNoRows {
+		return false
+	}
+
+	if err != nil {
+		log.Panicln("("+userId+") checkUserBlacklist#DbMap.SelectOne", err)
+	}
+	return true
 }
 
 func getAllMembers(guildId string) []*discordgo.Member {

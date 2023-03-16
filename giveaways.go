@@ -285,6 +285,27 @@ func unblacklistUser(guildId, userId string) error {
 	return err
 }
 
+func helperBlacklistUser(guildId, userId, blacklisterId string) error {
+	blacklist := &HelperBlacklist{GuildId: guildId,
+		UserId:        userId,
+		BlacklisterId: blacklisterId}
+	err := DbMap.Insert(blacklist)
+	if err != nil {
+		log.Println("("+guildId+") helperBlacklistUser#DbMap.Insert", err)
+		return err
+	}
+	return err
+}
+
+func helperUnBlacklistUser(guildId, userId string) error {
+	_, err := DbMap.Exec("DELETE FROM HelperBlacklist WHERE guild_id = ? AND user_id = ?", guildId, userId)
+	if err != nil {
+		log.Println("("+guildId+") helperUnBlacklistUser#DbMap.Exec", err)
+		return err
+	}
+	return err
+}
+
 func isBlacklisted(guildId, userId string) bool {
 	ret, err := DbMap.SelectInt("SELECT count(*) FROM Blacklists WHERE guild_id = ? AND user_id = ?", guildId, userId)
 	if err != nil {
